@@ -2,34 +2,27 @@ import { useState, useEffect, useCallback } from "react";
 import api from "../api/api";
 import { auth } from "../firebase/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-
 interface AssistantResponse {
   success: boolean;
   message: string;
 }
-
 interface Project {
   _id: string;
   name: string;
 }
-
 function AssistantPage() {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState<AssistantResponse | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-
-  // New States for Projects
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedPid, setSelectedPid] = useState("");
-
   // 1. User aur Projects load karne ka function
   const initializeData = useCallback(async (email: string) => {
     try {
       const res = await api.post("/users/login", { email });
       const userData = res.data.user || res.data;
       setUser(userData);
-
       if (userData.teamId) {
         const projRes = await api.get(`/projects?teamId=${userData.teamId}`);
         setProjects(projRes.data);
@@ -52,52 +45,55 @@ function AssistantPage() {
     return () => unsubscribe();
   }, [initializeData]);
 
+  // handleSubmit----------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!input.trim() || !selectedPid) return;
-    if (!user?.teamId) {
+    // User validation check
+    if (!user || !user.teamId) {
       setResponse({
         success: false,
-        message: "You must be assigned to a team to use the assistant.",
+        message: "User session not found. Please wait or re-login.",
       });
       return;
     }
-
     setLoading(true);
     setResponse(null);
-
     try {
       const res = await api.post(
         "/assistant",
         {
           message: input,
           teamId: user.teamId,
-          projectId: selectedPid, // 👈 Selected Project ID ab dynamic hai
+          projectId: selectedPid,
+          senderId: user._id, // Aksar backend ko 'kisne command di' ye chahiye hota hai
         },
         {
-          headers: { role: user.role },
+          headers: {
+            role: user.role,
+            userid: user._id, // ChatPage ki tarah headers consistent rakhein
+            teamid: user.teamId
+          },
         },
       );
-
+      // Agar backend success: true bhejta hai
       setResponse({
         success: true,
-        message: res.data.message || `Task processed successfully!`,
+        message: res.data.message || `Command executed successfully!`,
       });
       setInput("");
     } catch (err: any) {
+      console.error("Assistant Error:", err.response?.data);
       setResponse({
         success: false,
         message:
           err.response?.data?.message ||
-          "Assistant is having trouble understanding that.",
+          "AI could not process this command. Check if the member name exists.",
       });
     } finally {
       setLoading(false);
     }
   };
-  // -----------------------------------------------------------------------
-
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto min-h-[85vh] flex flex-col justify-center">
       {/* Header Section */}
@@ -129,26 +125,19 @@ function AssistantPage() {
             <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic">
               Select Project Context
             </label>
-            <select
-              value={selectedPid}
-              onChange={(e) => setSelectedPid(e.target.value)}
+            <select value={selectedPid} onChange={(e) => setSelectedPid(e.target.value)}
               className="bg-gray-950 border-2 border-gray-800 text-white px-6 py-3 rounded-2xl outline-none focus:border-indigo-600 transition-all text-xs font-bold min-w-[280px] shadow-inner appearance-none text-center"
             >
               {projects.length === 0 && (
                 <option value="">No Projects Found</option>
               )}
               {projects.map((p) => (
-                <option
-                  key={p._id}
-                  value={p._id}
-                  className="bg-gray-900 text-left"
-                >
+                <option key={p._id} value={p._id} className="bg-gray-900 text-left">
                   {p.name.toUpperCase()}
                 </option>
               ))}
             </select>
           </div>
-
           {/* Response Box */}
           <div className="min-h-[160px] bg-gray-950/80 rounded-3xl p-8 border border-gray-800 flex flex-col items-center justify-center text-center transition-all">
             {loading ? (
@@ -166,10 +155,8 @@ function AssistantPage() {
                 <h3 className="text-xl font-bold text-white mb-2 uppercase italic tracking-tighter">
                   {response.success ? "Success" : "Failed"}
                 </h3>
-                <p
-                  className={`text-sm max-w-sm mx-auto font-medium ${response.success ? "text-gray-400" : "text-red-400"}`}
-                >
-                  {response.message}
+                <p className={`text-sm max-w-sm mx-auto font-medium ${response.success ? "text-gray-400" : "text-red-400"}`}
+                > {response.message}
                 </p>
               </div>
             ) : (
@@ -184,9 +171,7 @@ function AssistantPage() {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="relative">
-            <input
-              type="text"
-              disabled={loading || !selectedPid}
+            <input type="text" disabled={loading || !selectedPid}
               placeholder={
                 selectedPid
                   ? "E.g. Assign a task to den to fix the navbar"
@@ -196,11 +181,8 @@ function AssistantPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
-            <button
-              type="submit"
-              disabled={loading || !input.trim() || !selectedPid}
-              className="absolute right-3 top-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg flex items-center gap-2"
-            >
+            <button type="submit" disabled={loading || !input.trim() || !selectedPid}
+              className="absolute right-3 top-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg flex items-center gap-2">
               Execute
             </button>
           </form>
@@ -213,12 +195,10 @@ function AssistantPage() {
           NLP Context
         </p>
         <p className="text-[10px] text-gray-400 leading-relaxed italic">
-          The assistant will create the task in the **TODO** column of the
-          selected project.
+          The assistant will create the task in the **TODO** column of the selected project.
         </p>
       </div>
     </div>
   );
 }
-
 export default AssistantPage;
