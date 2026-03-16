@@ -33,7 +33,20 @@ function ChatPage() {
     });
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+      // FIX: Check karein ki message list mein pehle se toh nahi hai (Optimistic update wala)
+      setMessages((prev) => {
+        const exists = prev.find(
+          (p) =>
+            p.content === msg.content &&
+            p.senderId === msg.senderId &&
+            Math.abs(
+              new Date(p.createdAt || "").getTime() -
+                new Date(msg.createdAt || "").getTime(),
+            ) < 5000,
+        );
+        if (exists) return prev;
+        return [...prev, msg];
+      });
     });
 
     return () => {
@@ -54,27 +67,21 @@ function ChatPage() {
         const userData = res.data.user;
         setUser(userData);
 
-        // ---------- SOCKET JOIN AFTER USER DATA LOAD ----------
         if (userData.teamId && socketRef.current) {
           socketRef.current.emit("joinTeam", userData.teamId);
-          console.log("Joined Team Room:", userData.teamId);
         }
 
-        // ---------- FETCH CHAT HISTORY ----------
         if (userData.teamId) {
           const msgs = await api.get<Message[]>(
             `/messages?teamId=${userData.teamId}`,
             {
-              headers: {
-                role: userData.role,
-                userid: userData._id,
-              },
+              headers: { role: userData.role, userid: userData._id },
             },
           );
           setMessages(msgs.data);
         }
       } catch (err: any) {
-        console.error("Auth/History error:", err.response?.data || err.message);
+        console.error("Auth error:", err.message);
       }
     });
 
@@ -86,32 +93,30 @@ function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ---------------- SEND MESSAGE ----------------
+  // ---------------- SEND MESSAGE (FIXED) ----------------
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
-    const payload = {
+    const payload: Message = {
       content: newMsg,
-      senderId: user._id,
+      senderId: String(user._id), // Ensure it's a string for comparison
       senderName: user.name,
       teamId: user.teamId,
+      createdAt: new Date().toISOString(),
     };
 
-    // Emit socket message
+    // 1. Emit to server
     socketRef.current.emit("sendMessage", payload);
 
-    // Optimistic update (optional, instant show)
-    setMessages((prev) => [
-      ...prev,
-      { ...payload, createdAt: new Date().toISOString() },
-    ]);
+    // 2. Local update (Optimistic)
+    setMessages((prev) => [...prev, payload]);
+
     setNewMsg("");
   };
 
   // ---------------- RENDER ----------------
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-      {/* Header */}
       <div className="p-5 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-white tracking-tighter uppercase italic">
@@ -126,20 +131,18 @@ function ChatPage() {
         </span>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, idx) => {
-          const isMe = msg.senderId === user?._id;
+          // IMPORTANT FIX: String comparison ensure karein
+          const isMe = String(msg.senderId) === String(user?._id);
 
           return (
             <div
               key={idx}
-              className={`flex flex-col ${
-                isMe ? "items-end text-right" : "items-start text-left"
-              } animate-in fade-in slide-in-from-bottom-1 duration-300`}
+              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"} animate-in fade-in slide-in-from-bottom-1 duration-300`}
             >
               <span className="text-[9px] font-bold text-gray-500 mb-1 uppercase tracking-wider px-1">
-                {isMe ? "You" : msg.senderName} •{" "}
+                {isMe ? "You" : msg.senderName || "Member"} •{" "}
                 {msg.createdAt
                   ? new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -162,7 +165,6 @@ function ChatPage() {
         <div ref={messagesEndRef}></div>
       </div>
 
-      {/* Input */}
       <div className="p-4 bg-gray-900 border-t border-gray-800">
         <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all">
           <input
