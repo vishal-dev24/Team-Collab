@@ -27,6 +27,7 @@ const io = new Server(server, {
     cors: {
         origin: process.env.FRONTEND_URL, // e.g., your deployed frontend URL
         methods: ["GET", "POST"],
+        credentials: true,
     },
 });
 
@@ -54,38 +55,30 @@ app.use("/api/assistant", assistantRoutes);
 io.on("connection", (socket) => {
     console.log("User Connected:", socket.id);
 
-    // 1️⃣ User joins a team room
     socket.on("joinTeam", (teamId) => {
-        if (!teamId) return console.warn("joinTeam: Missing teamId");
-        socket.join(teamId);
-        console.log(`User ${socket.id} joined team room: ${teamId}`);
+        if (!teamId) return;
+        const roomId = teamId.toString();
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
     });
 
-    // 2️⃣ User sends a message
     socket.on("sendMessage", async (data) => {
         try {
-            if (!data.teamId || !data.senderId || !data.content) {
-                return console.warn("sendMessage: Missing required fields", data);
-            }
+            if (!data.teamId || !data.senderId || !data.content) return;
 
-            // Save message to DB
+            const roomId = data.teamId.toString();
             const savedMsg = await saveSocketMessage(data);
 
             if (savedMsg) {
-                // Broadcast message to all users in the team room
-                io.to(data.teamId).emit("receiveMessage", savedMsg);
-                console.log(
-                    `Message from ${data.senderId} broadcasted to team ${data.teamId}`
-                );
+                io.to(roomId).emit("receiveMessage", savedMsg);
+                console.log(`Message broadcasted to room ${roomId}`);
             }
-        } catch (error) {
-            console.error("Socket message error:", error);
+        } catch (err) {
+            console.error("Socket error:", err);
         }
     });
 
-    socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
-    });
+    socket.on("disconnect", () => console.log("User disconnected:", socket.id));
 });
 
 /* ================= ERROR HANDLER ================= */
