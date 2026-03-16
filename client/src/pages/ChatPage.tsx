@@ -12,7 +12,6 @@ interface Message {
   teamId: string;
   createdAt?: string;
 }
-// ... (baki imports same rakhein)
 
 function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,12 +28,25 @@ function ChatPage() {
         ? "http://localhost:5000"
         : import.meta.env.VITE_SOCKET_URL;
 
+    // Fixed: Added polling fallback for Render/Cloud hosting stability
     socketRef.current = io(SOCKET_URL, {
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 5,
     });
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        // Prevent duplicate: agar message ID ya content/sender match kare toh add mat karo
+        const isDuplicate = prev.some(
+          (m) =>
+            (m._id && m._id === msg._id) ||
+            (m.content === msg.content &&
+              m.senderId === msg.senderId &&
+              !m._id),
+        );
+        if (isDuplicate) return prev;
+        return [...prev, msg];
+      });
     });
 
     return () => {
@@ -50,42 +62,40 @@ function ChatPage() {
         return;
       }
 
+      // Avoid re-fetching if user already exists
+      if (user) return;
+
       try {
         const res = await api.post("/users/login", { email: fbUser.email });
         const userData = res.data.user;
         setUser(userData);
 
-        // ---------- SOCKET JOIN AFTER USER DATA LOAD ----------
         if (userData.teamId && socketRef.current) {
           socketRef.current.emit("joinTeam", userData.teamId);
-          console.log("Joined Team Room:", userData.teamId);
         }
 
-        // ---------- FETCH CHAT HISTORY ----------
         if (userData.teamId) {
           const msgs = await api.get<Message[]>(
             `/messages?teamId=${userData.teamId}`,
             {
-              headers: {
-                role: userData.role,
-                userid: userData._id,
-              },
+              headers: { role: userData.role, userid: userData._id },
             },
           );
           setMessages(msgs.data);
         }
       } catch (err: any) {
-        console.error("Auth/History error:", err.response?.data || err.message);
+        console.error("Auth error:", err.message);
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Added user dependency to prevent infinite loops
 
   // ---------------- AUTO SCROLL ----------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
   // ---------------- SEND MESSAGE (FIXED) ----------------
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
@@ -97,18 +107,20 @@ function ChatPage() {
       teamId: user.teamId,
     };
 
-    // 1. Sirf socket ko message bhejein
+    // Optimistic Update: Idhar humne tempId ko hatakar direct payload use kiya hai
+    setMessages((prev) => [
+      ...prev,
+      { ...payload, createdAt: new Date().toISOString() },
+    ]);
+
+    // Socket emit
     socketRef.current.emit("sendMessage", payload);
 
-    // 2. Input field ko turant khali karein
     setNewMsg("");
-
-    // NOTE: setMessages yahan se hata diya hai.
-    // Message tab display hoga jab socketRef.current.on("receiveMessage") trigger hoga.
   };
 
-  // ---------------- RENDER ----------------
   return (
+    // ... (Aapka baki UI code same rahega)
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
       {/* Header */}
       <div className="p-5 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
@@ -129,13 +141,10 @@ function ChatPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === user?._id;
-
           return (
             <div
               key={idx}
-              className={`flex flex-col ${
-                isMe ? "items-end text-right" : "items-start text-left"
-              } animate-in fade-in slide-in-from-bottom-1 duration-300`}
+              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"} animate-in fade-in slide-in-from-bottom-1 duration-300`}
             >
               <span className="text-[9px] font-bold text-gray-500 mb-1 uppercase tracking-wider px-1">
                 {isMe ? "You" : msg.senderName} •{" "}
@@ -147,11 +156,7 @@ function ChatPage() {
                   : "Just now"}
               </span>
               <div
-                className={`px-4 py-2.5 rounded-2xl max-w-[75%] text-sm shadow-md leading-relaxed ${
-                  isMe
-                    ? "bg-indigo-600 text-white rounded-tr-none border border-indigo-500 shadow-indigo-500/20"
-                    : "bg-gray-800 text-gray-200 rounded-tl-none border border-gray-700"
-                }`}
+                className={`px-4 py-2.5 rounded-2xl max-w-[75%] text-sm shadow-md leading-relaxed ${isMe ? "bg-indigo-600 text-white rounded-tr-none border border-indigo-500 shadow-indigo-500/20" : "bg-gray-800 text-gray-200 rounded-tl-none border border-gray-700"}`}
               >
                 {msg.content}
               </div>
@@ -173,7 +178,7 @@ function ChatPage() {
           />
           <button
             onClick={sendMessage}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
           >
             Send
           </button>
