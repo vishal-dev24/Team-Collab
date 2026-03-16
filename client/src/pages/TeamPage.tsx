@@ -234,19 +234,17 @@ const TeamsPage = () => {
                   )}
 
                   {/* Admin Info */}
-                  {team.adminId && (
-                    <p className="mb-1">
-                      Admin:{" "}
-                      {typeof team.adminId === "object"
-                        ? team.adminId.name
-                        : "N/A"}{" "}
-                      (
-                      {typeof team.adminId === "object"
-                        ? team.adminId.email
-                        : "N/A"}
-                      )
-                    </p>
-                  )}
+                  <p className="mb-1">
+                    Admin:{" "}
+                    {typeof team.adminId === "object"
+                      ? team.adminId.name
+                      : "N/A"}{" "}
+                    (
+                    {typeof team.adminId === "object"
+                      ? team.adminId.email
+                      : "N/A"}
+                    )
+                  </p>
 
                   {/* Members List */}
                   <p className="mb-1 font-bold">Members:</p>
