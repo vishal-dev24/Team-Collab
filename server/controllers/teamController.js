@@ -4,15 +4,22 @@ import User from "../models/User.js";
 // 1. Get all teams (Admin ke liye - with Member Details)
 export const getTeams = async (req, res) => {
     try {
-        const teams = await Team.find().lean(); // lean() performance ke liye
+        // AdminId ko populate karo
+        const teams = await Team.find()
+            .populate("adminId", "name email") // populate name & email
+            .lean();
 
-        const teamsWithMembers = await Promise.all(teams.map(async (team) => {
-            const members = await User.find({ teamId: team._id }).select("-password");
-            return {
-                ...team,
-                members: members
-            };
-        }));
+        const teamsWithMembers = await Promise.all(
+            teams.map(async (team) => {
+                const members = await User.find({ teamId: team._id }).select(
+                    "-password"
+                );
+                return {
+                    ...team,
+                    members: members,
+                };
+            })
+        );
 
         res.status(200).json(teamsWithMembers);
     } catch (error) {
@@ -23,13 +30,19 @@ export const getTeams = async (req, res) => {
 // 2. Get Single Team (Member/Manager ke liye)
 export const getTeamById = async (req, res) => {
     try {
-        const team = await Team.findById(req.params.id).lean();
-        if (!team) return res.status(404).json({ message: "Team not found in Database" });
+        const team = await Team.findById(req.params.id)
+            .populate("adminId", "name email")
+            .lean();
+        if (!team)
+            return res.status(404).json({ message: "Team not found in Database" });
 
-        const members = await User.find({ teamId: req.params.id }).select("-password");
+        const members = await User.find({ teamId: req.params.id }).select(
+            "-password"
+        );
+
         res.status(200).json({
             ...team,
-            members: members
+            members: members,
         });
     } catch (error) {
         res.status(500).json({ message: "Invalid Team ID or Server Error" });
