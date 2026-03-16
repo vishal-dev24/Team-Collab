@@ -10,58 +10,57 @@ This application allows teams to **create projects, manage tasks visually, commu
 
 ## Authentication
 
-* Firebase Authentication (Signup / Login)
-* Secure user identity
-* Profile name auto sync
+- Firebase Authentication (Signup / Login)
+- Secure user identity
+- Profile name auto sync
 
 ## Role Based Access
 
-* **Admin**
+- **Admin**
+  - Manage teams
+  - Create / Update / Delete projects
+  - Manage tasks
 
-  * Manage teams
-  * Create / Update / Delete projects
-  * Manage tasks
-* **Manager**
+- **Manager**
+  - Create projects
+  - Assign tasks
+  - Update tasks
 
-  * Create projects
-  * Assign tasks
-  * Update tasks
-* **Member**
-
-  * View projects
-  * Update task status
+- **Member**
+  - View projects
+  - Update task status
 
 ## Project Management
 
-* Create projects
-* Update project details
-* Delete projects (Admin only)
-* Project based task view
+- Create projects
+- Update project details
+- Delete projects (Admin only)
+- Project based task view
 
 ## Kanban Task Board
 
 Drag and drop tasks across columns:
 
-* Todo
-* In Progress
-* Done
+- Todo
+- In Progress
+- Done
 
 Built using **React Beautiful DnD**.
 
 ## Task Features
 
-* Create tasks
-* Assign team members
-* Update title
-* Update description
-* Update status
-* Delete tasks
+- Create tasks
+- Assign team members
+- Update title
+- Update description
+- Update status
+- Delete tasks
 
 ## Real Time Team Chat
 
-* Socket.IO based messaging
-* Team specific chat rooms
-* Real time message updates
+- Socket.IO based messaging
+- Team specific chat rooms
+- Real time message updates
 
 ## AI Assistant
 
@@ -73,30 +72,30 @@ Integrated AI endpoint to assist users with productivity.
 
 ### Frontend
 
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
-* React Router
-* Axios
-* React Beautiful DnD
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Axios
+- React Beautiful DnD
 
 ### Backend
 
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* Socket.IO
-* Firebase Admin
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- Socket.IO
+- Firebase Admin
 
 ### Authentication
 
-* Firebase Auth
+- Firebase Auth
 
 ### Database
 
-* MongoDB Atlas
+- MongoDB Atlas
 
 ---
 
@@ -194,10 +193,10 @@ Deploy on **Netlify**
 
 # 📸 Screens
 
-* Dashboard
-* Kanban Board
-* Project Management
-* Team Chat
+- Dashboard
+- Kanban Board
+- Project Management
+- Team Chat
 
 ---
 
@@ -205,12 +204,12 @@ Deploy on **Netlify**
 
 This project demonstrates:
 
-* Full MERN stack architecture
-* Real time applications with Socket.IO
-* Role based authorization
-* REST API design
-* Drag and drop UI
-* Authentication integration
+- Full MERN stack architecture
+- Real time applications with Socket.IO
+- Role based authorization
+- REST API design
+- Drag and drop UI
+- Authentication integration
 
 ---
 
