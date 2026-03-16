@@ -29,7 +29,7 @@ function ChatPage() {
         : import.meta.env.VITE_SOCKET_URL;
 
     socketRef.current = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
     });
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
@@ -50,18 +50,17 @@ function ChatPage() {
       }
 
       try {
-        // Login or fetch user info from backend
         const res = await api.post("/api/users/login", { email: fbUser.email });
         const userData = res.data.user;
         setUser(userData);
 
-        // Join team room on socket after user loads
+        // ---------- SOCKET JOIN AFTER USER DATA LOAD ----------
         if (userData.teamId && socketRef.current) {
           socketRef.current.emit("joinTeam", userData.teamId);
           console.log("Joined Team Room:", userData.teamId);
         }
 
-        // Fetch chat history
+        // ---------- FETCH CHAT HISTORY ----------
         if (userData.teamId) {
           const msgs = await api.get<Message[]>(
             `/api/messages?teamId=${userData.teamId}`,
@@ -98,7 +97,14 @@ function ChatPage() {
       teamId: user.teamId,
     };
 
+    // Emit socket message
     socketRef.current.emit("sendMessage", payload);
+
+    // Optimistic update (optional, instant show)
+    setMessages((prev) => [
+      ...prev,
+      { ...payload, createdAt: new Date().toISOString() },
+    ]);
     setNewMsg("");
   };
 
