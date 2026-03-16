@@ -28,7 +28,6 @@ function ChatPage() {
         ? "http://localhost:5000"
         : import.meta.env.VITE_SOCKET_URL;
 
-    // Fixed: Added polling fallback for Render/Cloud hosting stability
     socketRef.current = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
       reconnectionAttempts: 5,
@@ -36,15 +35,12 @@ function ChatPage() {
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
       setMessages((prev) => {
-        // Prevent duplicate: agar message ID ya content/sender match kare toh add mat karo
-        const isDuplicate = prev.some(
+        const alreadyExists = prev.some(
           (m) =>
-            (m._id && m._id === msg._id) ||
-            (m.content === msg.content &&
-              m.senderId === msg.senderId &&
-              !m._id),
+            m.content === msg.content && m.senderId === msg.senderId && !m._id,
         );
-        if (isDuplicate) return prev;
+
+        if (alreadyExists) return prev;
         return [...prev, msg];
       });
     });
@@ -62,7 +58,6 @@ function ChatPage() {
         return;
       }
 
-      // Avoid re-fetching if user already exists
       if (user) return;
 
       try {
@@ -89,14 +84,14 @@ function ChatPage() {
     });
 
     return () => unsubscribe();
-  }, [user]); // Added user dependency to prevent infinite loops
+  }, [user]);
 
   // ---------------- AUTO SCROLL ----------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ---------------- SEND MESSAGE (FIXED) ----------------
+  // ---------------- SEND MESSAGE ----------------
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
@@ -107,20 +102,20 @@ function ChatPage() {
       teamId: user.teamId,
     };
 
-    // Optimistic Update: Idhar humne tempId ko hatakar direct payload use kiya hai
+    // 1. INSTANT UPDATE (Optimistic)
+    // Hum ise pehle update kar rahe hain taaki user ko "Fast" lage
     setMessages((prev) => [
       ...prev,
       { ...payload, createdAt: new Date().toISOString() },
     ]);
 
-    // Socket emit
+    // 2. SOCKET EMIT
     socketRef.current.emit("sendMessage", payload);
 
     setNewMsg("");
   };
 
   return (
-    // ... (Aapka baki UI code same rahega)
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
       {/* Header */}
       <div className="p-5 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
@@ -178,7 +173,7 @@ function ChatPage() {
           />
           <button
             onClick={sendMessage}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
           >
             Send
           </button>
