@@ -4,6 +4,8 @@ import api from "../api/api";
 
 // 1. Team Interface (API se aane wale data ka structure)
 interface Team {
+  updatedAt: any;
+  createdAt: any;
   _id: string;
   name: string;
   description?: string;
@@ -13,7 +15,13 @@ interface Team {
     email: string;
     role: string;
   }[];
-  adminId: string;
+  adminId:
+    | {
+        _id: string;
+        name: string;
+        email: string;
+      }
+    | string; // agar populate na ho toh string
 }
 
 // 2. UserContext Interface (useOutletContext ke liye)
@@ -186,7 +194,7 @@ const TeamsPage = () => {
             teams.map((team) => (
               <div
                 key={team._id}
-                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[280px] shadow-lg"
+                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[320px] shadow-lg"
               >
                 {/* Top Section: Icon + Name */}
                 <div className="flex gap-4 items-center mb-2">
@@ -208,19 +216,58 @@ const TeamsPage = () => {
                   )}
                 </div>
 
-                {/* Middle Section: Description + Members */}
-                <div className="flex-1 overflow-y-auto mt-2">
+                {/* Middle Section: Description + Members + Admin + Dates */}
+                <div className="flex-1 overflow-y-auto mt-2 text-xs text-gray-400 font-bold uppercase tracking-widest">
+                  {/* Description */}
                   {editingTeamId === team._id ? (
                     <textarea
-                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none"
+                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none mb-2"
                       value={editingTeamDesc}
                       onChange={(e) => setEditingTeamDesc(e.target.value)}
                       placeholder="Team description..."
                     />
                   ) : (
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest overflow-hidden">
+                    <p className="overflow-hidden mb-2">
                       {team.description || "No description"} •{" "}
                       {team.members?.length || 0} Members
+                    </p>
+                  )}
+
+                  {/* Admin Info */}
+                  {team.adminId && (
+                    <p className="mb-1">
+                      Admin:{" "}
+                      {typeof team.adminId === "object"
+                        ? team.adminId.name
+                        : "N/A"}{" "}
+                      (
+                      {typeof team.adminId === "object"
+                        ? team.adminId.email
+                        : "N/A"}
+                      )
+                    </p>
+                  )}
+
+                  {/* Members List */}
+                  <p className="mb-1 font-bold">Members:</p>
+                  <ul className="list-disc list-inside max-h-16 overflow-y-auto text-gray-300 mb-2">
+                    {team.members?.map((m) => (
+                      <li key={m._id}>
+                        {m.name} ({m.role})
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Optional: Creation / Updated Date */}
+                  {team.createdAt && (
+                    <p className="text-gray-500 text-[10px] mt-1">
+                      Created: {new Date(team.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {team.updatedAt && (
+                    <p className="text-gray-500 text-[10px]">
+                      Last Updated:{" "}
+                      {new Date(team.updatedAt).toLocaleDateString()}
                     </p>
                   )}
                 </div>
