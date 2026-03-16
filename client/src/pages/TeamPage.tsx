@@ -35,6 +35,11 @@ const TeamsPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Add to TeamsPage component state
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingTeamName, setEditingTeamName] = useState("");
+  const [editingTeamDesc, setEditingTeamDesc] = useState("");
+
   const fetchTeamsData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -112,7 +117,24 @@ const TeamsPage = () => {
       setError("Delete failed");
     }
   };
-
+  // handleUpdateTeam
+  const handleUpdateTeam = async (teamId: string) => {
+    if (!editingTeamName.trim()) return setError("Team name cannot be empty");
+    try {
+      setError("");
+      await api.put(
+        `/teams/${teamId}`,
+        { name: editingTeamName, description: editingTeamDesc },
+        { headers: { role: user?.role } },
+      );
+      setEditingTeamId(null);
+      setEditingTeamName("");
+      setEditingTeamDesc("");
+      fetchTeamsData(); // Refresh the list
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to update team");
+    }
+  };
   // Check if role is admin (utility constant)
   const isAdmin = user?.role.toUpperCase() === "ADMIN";
 
@@ -162,21 +184,77 @@ const TeamsPage = () => {
                 key={team._id}
                 className="bg-gray-800 border border-gray-700 p-6 rounded-3xl hover:border-indigo-500/50 transition-all"
               >
-                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4">
-                  {team.name?.charAt(0)}
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                      {team.name?.charAt(0)}
+                    </div>
+                    {editingTeamId === team._id ? (
+                      <input
+                        className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none"
+                        value={editingTeamName}
+                        onChange={(e) => setEditingTeamName(e.target.value)}
+                        placeholder="Team Name"
+                      />
+                    ) : (
+                      <h3 className="text-xl font-bold text-white">
+                        {team.name}
+                      </h3>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    {editingTeamId === team._id ? (
+                      <>
+                        <button
+                          className="bg-green-600 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                          onClick={() => handleUpdateTeam(team._id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="bg-red-600 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                          onClick={() => setEditingTeamId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="bg-indigo-500 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                        onClick={() => {
+                          setEditingTeamId(team._id);
+                          setEditingTeamName(team.name);
+                          setEditingTeamDesc(team.description || "");
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleDeleteTeam(team._id)}
+                      className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {team.name}
-                </h3>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-6">
-                  {team.members?.length || 0} Members
-                </p>
-                <button
-                  onClick={() => handleDeleteTeam(team._id)}
-                  className="w-full py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all"
-                >
-                  Delete Team
-                </button>
+
+                {/* Optional description */}
+                {editingTeamId === team._id ? (
+                  <textarea
+                    className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl mt-2 outline-none"
+                    value={editingTeamDesc}
+                    onChange={(e) => setEditingTeamDesc(e.target.value)}
+                    placeholder="Team description..."
+                  />
+                ) : (
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-6">
+                    {team.description || "No description"} •{" "}
+                    {team.members?.length || 0} Members
+                  </p>
+                )}
               </div>
             ))
           ) : (
