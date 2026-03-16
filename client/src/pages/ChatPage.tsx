@@ -18,11 +18,10 @@ function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [user, setUser] = useState<any>(null);
-
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. SOCKET CONNECTION
+  // 1. SOCKET INITIALIZATION
   useEffect(() => {
     const SOCKET_URL =
       import.meta.env.MODE === "development"
@@ -32,35 +31,35 @@ function ChatPage() {
     socketRef.current = io(SOCKET_URL, { transports: ["websocket"] });
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
-      // Sirf dusro ke messages list mein add karein, apne nahi (kyunki apna hum manually add kar chuke hain)
+      // ONLY add if it's from someone else.
+      // Your own messages are added via sendMessage (Optimistic UI)
       setMessages((prev) => {
-        const isDuplicate = prev.some(
-          (m) => m.content === msg.content && m.senderId === msg.senderId,
-        );
-        return isDuplicate ? prev : [...prev, msg];
+        const isFromMe = String(msg.senderId) === String(user?._id);
+        if (isFromMe) return prev;
+        return [...prev, msg];
       });
     });
 
     return () => {
       socketRef.current?.disconnect();
     };
-  }, []);
+  }, [user?._id]); // Re-bind listener if user ID changes to ensure 'isFromMe' works
 
-  // 2. AUTH & FETCH HISTORY
+  // 2. JOIN TEAM ROOM (Fixes the race condition)
+  useEffect(() => {
+    if (user?.teamId && socketRef.current) {
+      socketRef.current.emit("joinTeam", user.teamId);
+    }
+  }, [user?.teamId, socketRef.current]);
+
+  // 3. AUTH & HISTORY
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (!fbUser) {
-        setUser(null);
-        return;
-      }
+      if (!fbUser) return setUser(null);
       try {
         const res = await api.post("/users/login", { email: fbUser.email });
         const userData = res.data.user;
         setUser(userData);
-
-        if (userData.teamId && socketRef.current) {
-          socketRef.current.emit("joinTeam", userData.teamId);
-        }
 
         if (userData.teamId) {
           const msgs = await api.get<Message[]>(
@@ -78,28 +77,19 @@ function ChatPage() {
     return () => unsubscribe();
   }, []);
 
-  // 3. AUTO SCROLL
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // 4. SEND MESSAGE (FIXED LOGIC)
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
     const payload: Message = {
       content: newMsg,
-      senderId: String(user._id), // Force String for matching
+      senderId: String(user._id),
       senderName: user.name,
       teamId: user.teamId,
       createdAt: new Date().toISOString(),
     };
 
-    // Socket ko bhejein
     socketRef.current.emit("sendMessage", payload);
-
-    // Manual update taaki turant dikhe (Optimistic)
-    setMessages((prev) => [...prev, payload]);
+    setMessages((prev) => [...prev, payload]); // Optimistic Update
     setNewMsg("");
   };
 
