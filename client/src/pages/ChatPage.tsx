@@ -12,8 +12,7 @@ interface Message {
   teamId: string;
   createdAt?: string;
 }
-
-// ... (imports same rahenge)
+// ... (baki imports same rakhein)
 
 function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,9 +31,14 @@ function ChatPage() {
 
     socketRef.current = io(SOCKET_URL, { transports: ["websocket"] });
 
-    // Server se message aane par list mein add karein
     socketRef.current.on("receiveMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+      // Sirf dusro ke messages list mein add karein, apne nahi (kyunki apna hum manually add kar chuke hain)
+      setMessages((prev) => {
+        const isDuplicate = prev.some(
+          (m) => m.content === msg.content && m.senderId === msg.senderId,
+        );
+        return isDuplicate ? prev : [...prev, msg];
+      });
     });
 
     return () => {
@@ -67,8 +71,8 @@ function ChatPage() {
           );
           setMessages(msgs.data);
         }
-      } catch (err) {
-        console.error("Auth Error:", err);
+      } catch (err: any) {
+        console.error("Auth error:", err.message);
       }
     });
     return () => unsubscribe();
@@ -79,48 +83,54 @@ function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 4. SEND MESSAGE (CLEANED)
+  // 4. SEND MESSAGE (FIXED LOGIC)
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
-    const payload = {
+    const payload: Message = {
       content: newMsg,
-      senderId: String(user._id), // IMPORTANT: Convert to String
+      senderId: String(user._id), // Force String for matching
       senderName: user.name,
       teamId: user.teamId,
       createdAt: new Date().toISOString(),
     };
 
-    // Sirf socket par bhejein, setMessages local mein NA KAREIN (server wapas bhejega)
+    // Socket ko bhejein
     socketRef.current.emit("sendMessage", payload);
+
+    // Manual update taaki turant dikhe (Optimistic)
+    setMessages((prev) => [...prev, payload]);
     setNewMsg("");
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-      {/* Header same rahega */}
       <div className="p-5 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
-        <h2 className="text-xl font-black text-white tracking-tighter uppercase italic">
-          Team Chat
-        </h2>
-        <span className="text-[10px] bg-indigo-600 px-3 py-1 rounded-full font-bold text-white uppercase animate-pulse">
+        <div>
+          <h2 className="text-xl font-black text-white tracking-tighter uppercase italic">
+            Team Chat
+          </h2>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+            Live Workspace
+          </p>
+        </div>
+        <span className="text-[10px] bg-indigo-600 px-3 py-1 rounded-full font-bold text-white uppercase tracking-widest animate-pulse">
           Online
         </span>
       </div>
 
-      {/* Messages List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, idx) => {
-          // ID Comparison Fix
+          // SABSE ZAROORI LINE: String conversion for perfect matching
           const isMe = String(msg.senderId) === String(user?._id);
 
           return (
             <div
               key={idx}
-              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"}`}
+              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"} animate-in fade-in slide-in-from-bottom-1`}
             >
               <span className="text-[9px] font-bold text-gray-500 mb-1 uppercase tracking-wider px-1">
-                {isMe ? "You" : msg.senderName || "Member"} •{" "}
+                {isMe ? "You" : msg.senderName} •{" "}
                 {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -141,19 +151,18 @@ function ChatPage() {
         <div ref={messagesEndRef}></div>
       </div>
 
-      {/* Input Field */}
       <div className="p-4 bg-gray-900 border-t border-gray-800">
-        <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700">
+        <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all">
           <input
             className="flex-1 bg-transparent px-4 py-2 outline-none text-white text-sm"
             placeholder="Type your message..."
             value={newMsg}
-            onChange={(e) => setNewMsg(e.target.value)}
+            onChange={(e) => setNewMsg(e.target.value)} // Corrected to e.target.value
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
           <button
             onClick={sendMessage}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase transition-all active:scale-95"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 shadow-lg"
           >
             Send
           </button>
