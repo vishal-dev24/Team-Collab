@@ -1,5 +1,5 @@
 import User from "../models/User.js"; // 👈 Path check kar lena aapki file structure ke hisab se
-import Task from "../models/taskModel.js";
+import Task from "../models/Task.js";
 
 export const handleAssistantTask = async (req, res) => {
     try {
