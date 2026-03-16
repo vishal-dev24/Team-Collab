@@ -24,9 +24,10 @@ function ChatPage() {
 
   // 2. Initial Socket Connection
   useEffect(() => {
-    const socketUrl =
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    socketRef.current = io(socketUrl);
+    const socketUrl = import.meta.env.VITE_SOCKET_URL;
+    socketRef.current = io(socketUrl, {
+      transports: ["websocket", "polling"],
+    });
 
     socketRef.current.on("receiveMessage", (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
