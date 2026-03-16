@@ -13,6 +13,8 @@ interface Message {
   createdAt?: string;
 }
 
+// ... (imports same rahenge)
+
 function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
@@ -21,32 +23,18 @@ function ChatPage() {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ---------------- SOCKET CONNECTION ----------------
+  // 1. SOCKET CONNECTION
   useEffect(() => {
     const SOCKET_URL =
       import.meta.env.MODE === "development"
         ? "http://localhost:5000"
         : import.meta.env.VITE_SOCKET_URL;
 
-    socketRef.current = io(SOCKET_URL, {
-      transports: ["websocket"],
-    });
+    socketRef.current = io(SOCKET_URL, { transports: ["websocket"] });
 
+    // Server se message aane par list mein add karein
     socketRef.current.on("receiveMessage", (msg: Message) => {
-      // FIX: Check karein ki message list mein pehle se toh nahi hai (Optimistic update wala)
-      setMessages((prev) => {
-        const exists = prev.find(
-          (p) =>
-            p.content === msg.content &&
-            p.senderId === msg.senderId &&
-            Math.abs(
-              new Date(p.createdAt || "").getTime() -
-                new Date(msg.createdAt || "").getTime(),
-            ) < 5000,
-        );
-        if (exists) return prev;
-        return [...prev, msg];
-      });
+      setMessages((prev) => [...prev, msg]);
     });
 
     return () => {
@@ -54,14 +42,13 @@ function ChatPage() {
     };
   }, []);
 
-  // ---------------- AUTH & FETCH HISTORY ----------------
+  // 2. AUTH & FETCH HISTORY
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
         setUser(null);
         return;
       }
-
       try {
         const res = await api.post("/users/login", { email: fbUser.email });
         const userData = res.data.user;
@@ -75,85 +62,74 @@ function ChatPage() {
           const msgs = await api.get<Message[]>(
             `/messages?teamId=${userData.teamId}`,
             {
-              headers: { role: userData.role, userid: userData._id },
+              headers: { role: userData.role, userid: String(userData._id) },
             },
           );
           setMessages(msgs.data);
         }
-      } catch (err: any) {
-        console.error("Auth error:", err.message);
+      } catch (err) {
+        console.error("Auth Error:", err);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
-  // ---------------- AUTO SCROLL ----------------
+  // 3. AUTO SCROLL
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ---------------- SEND MESSAGE (FIXED) ----------------
+  // 4. SEND MESSAGE (CLEANED)
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
-    const payload: Message = {
+    const payload = {
       content: newMsg,
-      senderId: String(user._id), // Ensure it's a string for comparison
+      senderId: String(user._id), // IMPORTANT: Convert to String
       senderName: user.name,
       teamId: user.teamId,
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Emit to server
+    // Sirf socket par bhejein, setMessages local mein NA KAREIN (server wapas bhejega)
     socketRef.current.emit("sendMessage", payload);
-
-    // 2. Local update (Optimistic)
-    setMessages((prev) => [...prev, payload]);
-
     setNewMsg("");
   };
 
-  // ---------------- RENDER ----------------
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Header same rahega */}
       <div className="p-5 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-black text-white tracking-tighter uppercase italic">
-            Team Chat
-          </h2>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-            Live Workspace
-          </p>
-        </div>
-        <span className="text-[10px] bg-indigo-600 px-3 py-1 rounded-full font-bold text-white uppercase tracking-widest animate-pulse">
+        <h2 className="text-xl font-black text-white tracking-tighter uppercase italic">
+          Team Chat
+        </h2>
+        <span className="text-[10px] bg-indigo-600 px-3 py-1 rounded-full font-bold text-white uppercase animate-pulse">
           Online
         </span>
       </div>
 
+      {/* Messages List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, idx) => {
-          // IMPORTANT FIX: String comparison ensure karein
+          // ID Comparison Fix
           const isMe = String(msg.senderId) === String(user?._id);
 
           return (
             <div
               key={idx}
-              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"} animate-in fade-in slide-in-from-bottom-1 duration-300`}
+              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"}`}
             >
               <span className="text-[9px] font-bold text-gray-500 mb-1 uppercase tracking-wider px-1">
                 {isMe ? "You" : msg.senderName || "Member"} •{" "}
-                {msg.createdAt
-                  ? new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "Just now"}
+                {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
               <div
-                className={`px-4 py-2.5 rounded-2xl max-w-[75%] text-sm shadow-md leading-relaxed ${
+                className={`px-4 py-2.5 rounded-2xl max-w-[75%] text-sm shadow-md ${
                   isMe
-                    ? "bg-indigo-600 text-white rounded-tr-none border border-indigo-500 shadow-indigo-500/20"
+                    ? "bg-indigo-600 text-white rounded-tr-none border border-indigo-500"
                     : "bg-gray-800 text-gray-200 rounded-tl-none border border-gray-700"
                 }`}
               >
@@ -165,8 +141,9 @@ function ChatPage() {
         <div ref={messagesEndRef}></div>
       </div>
 
+      {/* Input Field */}
       <div className="p-4 bg-gray-900 border-t border-gray-800">
-        <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all">
+        <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700">
           <input
             className="flex-1 bg-transparent px-4 py-2 outline-none text-white text-sm"
             placeholder="Type your message..."
@@ -176,7 +153,7 @@ function ChatPage() {
           />
           <button
             onClick={sendMessage}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase transition-all active:scale-95"
           >
             Send
           </button>
