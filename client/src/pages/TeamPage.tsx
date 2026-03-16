@@ -4,9 +4,8 @@ import api from "../api/api";
 
 // 1. Team Interface (API se aane wale data ka structure)
 interface Team {
-  admin: any;
-  createdAt: any;
   updatedAt: any;
+  createdAt: any;
   _id: string;
   name: string;
   description?: string;
@@ -16,7 +15,13 @@ interface Team {
     email: string;
     role: string;
   }[];
-  adminId: string;
+  adminId:
+    | {
+        _id: string;
+        name: string;
+        email: string;
+      }
+    | string; // agar populate na ho toh string
 }
 
 // 2. UserContext Interface (useOutletContext ke liye)
@@ -318,9 +323,17 @@ const TeamsPage = () => {
                   )}
 
                   {/* Admin Info */}
-                  {team.admin && (
+                  {team.adminId && (
                     <p className="mb-1">
-                      Admin: {team.admin.name} ({team.admin.email})
+                      Admin:{" "}
+                      {typeof team.adminId === "object"
+                        ? team.adminId.name
+                        : "N/A"}{" "}
+                      (
+                      {typeof team.adminId === "object"
+                        ? team.adminId.email
+                        : "N/A"}
+                      )
                     </p>
                   )}
 
