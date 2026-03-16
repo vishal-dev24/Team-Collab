@@ -186,83 +186,81 @@ const TeamsPage = () => {
             teams.map((team) => (
               <div
                 key={team._id}
-                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl hover:border-indigo-500/50 transition-all flex flex-col justify-between h-[280px] shadow-lg"
+                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[280px] shadow-lg"
               >
-                {/* Header: Icon + Name + Buttons */}
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex gap-4 items-center">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                      {team.name?.charAt(0)}
-                    </div>
-
-                    {editingTeamId === team._id ? (
-                      <input
-                        className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none w-36 sm:w-48"
-                        value={editingTeamName}
-                        onChange={(e) => setEditingTeamName(e.target.value)}
-                        placeholder="Team Name"
-                      />
-                    ) : (
-                      <h3 className="text-xl font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">
-                        {team.name}
-                      </h3>
-                    )}
+                {/* Top Section: Icon + Name */}
+                <div className="flex gap-4 items-center mb-2">
+                  <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                    {team.name?.charAt(0)}
                   </div>
 
-                  {/* Button Group */}
-                  <div className="flex gap-2 flex-shrink-0">
-                    {editingTeamId === team._id ? (
-                      <>
-                        <button
-                          className="bg-green-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
-                          onClick={() => handleUpdateTeam(team._id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="bg-red-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
-                          onClick={() => setEditingTeamId(null)}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className="bg-indigo-500 px-3 py-1 rounded-xl text-white text-xs font-bold"
-                        onClick={() => {
-                          setEditingTeamId(team._id);
-                          setEditingTeamName(team.name);
-                          setEditingTeamDesc(team.description || "");
-                        }}
-                      >
-                        Edit
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => handleDeleteTeam(team._id)}
-                      className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  {editingTeamId === team._id ? (
+                    <input
+                      className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none w-36 sm:w-48"
+                      value={editingTeamName}
+                      onChange={(e) => setEditingTeamName(e.target.value)}
+                      placeholder="Team Name"
+                    />
+                  ) : (
+                    <h3 className="text-xl font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">
+                      {team.name}
+                    </h3>
+                  )}
                 </div>
 
-                {/* Description + Members */}
-                <div className="flex-1 overflow-y-auto">
+                {/* Middle Section: Description + Members */}
+                <div className="flex-1 overflow-y-auto mt-2">
                   {editingTeamId === team._id ? (
                     <textarea
-                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl mt-2 outline-none h-20 resize-none"
+                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none"
                       value={editingTeamDesc}
                       onChange={(e) => setEditingTeamDesc(e.target.value)}
                       placeholder="Team description..."
                     />
                   ) : (
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2 h-16 overflow-hidden">
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest overflow-hidden">
                       {team.description || "No description"} •{" "}
                       {team.members?.length || 0} Members
                     </p>
                   )}
+                </div>
+
+                {/* Bottom Section: Buttons */}
+                <div className="flex gap-2 mt-4 justify-end flex-wrap">
+                  {editingTeamId === team._id ? (
+                    <>
+                      <button
+                        className="bg-green-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
+                        onClick={() => handleUpdateTeam(team._id)}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="bg-red-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
+                        onClick={() => setEditingTeamId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="bg-indigo-500 px-3 py-1 rounded-xl text-white text-xs font-bold"
+                      onClick={() => {
+                        setEditingTeamId(team._id);
+                        setEditingTeamName(team.name);
+                        setEditingTeamDesc(team.description || "");
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => handleDeleteTeam(team._id)}
+                    className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))
