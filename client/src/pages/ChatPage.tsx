@@ -86,8 +86,7 @@ function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // ---------------- SEND MESSAGE ----------------
+  // ---------------- SEND MESSAGE (FIXED) ----------------
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
@@ -98,15 +97,14 @@ function ChatPage() {
       teamId: user.teamId,
     };
 
-    // Emit socket message
+    // 1. Sirf socket ko message bhejein
     socketRef.current.emit("sendMessage", payload);
 
-    // Optimistic update (optional, instant show)
-    setMessages((prev) => [
-      ...prev,
-      { ...payload, createdAt: new Date().toISOString() },
-    ]);
+    // 2. Input field ko turant khali karein
     setNewMsg("");
+
+    // NOTE: setMessages yahan se hata diya hai.
+    // Message tab display hoga jab socketRef.current.on("receiveMessage") trigger hoga.
   };
 
   // ---------------- RENDER ----------------
