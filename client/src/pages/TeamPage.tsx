@@ -124,7 +124,11 @@ const TeamsPage = () => {
       setError("");
       await api.put(
         `/teams/${teamId}`,
-        { name: editingTeamName, description: editingTeamDesc },
+        {
+          name: editingTeamName,
+          description: editingTeamDesc,
+          adminId: user?._id, // ✅ Add this
+        },
         { headers: { role: user?.role } },
       );
       setEditingTeamId(null);
@@ -182,38 +186,41 @@ const TeamsPage = () => {
             teams.map((team) => (
               <div
                 key={team._id}
-                className="bg-gray-800 border border-gray-700 p-6 rounded-3xl hover:border-indigo-500/50 transition-all"
+                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl hover:border-indigo-500/50 transition-all flex flex-col justify-between h-[280px] shadow-lg"
               >
-                <div className="flex justify-between items-center mb-4">
+                {/* Header: Icon + Name + Buttons */}
+                <div className="flex justify-between items-start mb-2">
                   <div className="flex gap-4 items-center">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
                       {team.name?.charAt(0)}
                     </div>
+
                     {editingTeamId === team._id ? (
                       <input
-                        className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none"
+                        className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none w-36 sm:w-48"
                         value={editingTeamName}
                         onChange={(e) => setEditingTeamName(e.target.value)}
                         placeholder="Team Name"
                       />
                     ) : (
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className="text-xl font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">
                         {team.name}
                       </h3>
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Button Group */}
+                  <div className="flex gap-2 flex-shrink-0">
                     {editingTeamId === team._id ? (
                       <>
                         <button
-                          className="bg-green-600 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                          className="bg-green-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
                           onClick={() => handleUpdateTeam(team._id)}
                         >
                           Save
                         </button>
                         <button
-                          className="bg-red-600 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                          className="bg-red-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
                           onClick={() => setEditingTeamId(null)}
                         >
                           Cancel
@@ -221,7 +228,7 @@ const TeamsPage = () => {
                       </>
                     ) : (
                       <button
-                        className="bg-indigo-500 px-4 py-1 rounded-xl text-white text-xs font-bold"
+                        className="bg-indigo-500 px-3 py-1 rounded-xl text-white text-xs font-bold"
                         onClick={() => {
                           setEditingTeamId(team._id);
                           setEditingTeamName(team.name);
@@ -241,24 +248,28 @@ const TeamsPage = () => {
                   </div>
                 </div>
 
-                {/* Optional description */}
-                {editingTeamId === team._id ? (
-                  <textarea
-                    className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl mt-2 outline-none"
-                    value={editingTeamDesc}
-                    onChange={(e) => setEditingTeamDesc(e.target.value)}
-                    placeholder="Team description..."
-                  />
-                ) : (
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-6">
-                    {team.description || "No description"} •{" "}
-                    {team.members?.length || 0} Members
-                  </p>
-                )}
+                {/* Description + Members */}
+                <div className="flex-1 overflow-y-auto">
+                  {editingTeamId === team._id ? (
+                    <textarea
+                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl mt-2 outline-none h-20 resize-none"
+                      value={editingTeamDesc}
+                      onChange={(e) => setEditingTeamDesc(e.target.value)}
+                      placeholder="Team description..."
+                    />
+                  ) : (
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2 h-16 overflow-hidden">
+                      {team.description || "No description"} •{" "}
+                      {team.members?.length || 0} Members
+                    </p>
+                  )}
+                </div>
               </div>
             ))
           ) : (
-            <p className="text-gray-500">No teams found. Create one!</p>
+            <p className="text-gray-500 col-span-full text-center py-10">
+              No teams found. Create one!
+            </p>
           )}
         </div>
       ) : (

@@ -59,13 +59,20 @@ export const createTeam = async (req, res) => {
 export const updateTeam = async (req, res) => {
     try {
         const { name, description, adminId } = req.body;
+
+        const updateFields = {};
+        if (name) updateFields.name = name;
+        if (description) updateFields.description = description;
+        if (adminId) updateFields.adminId = adminId; // optional
+
         const team = await Team.findByIdAndUpdate(
             req.params.id,
-            { name, description, adminId },
-            { new: true } // Updated document return karega
+            updateFields,
+            { new: true }
         );
 
         if (!team) return res.status(404).json({ message: "Team not found" });
+
         res.status(200).json(team);
     } catch (error) {
         res.status(500).json({ message: error.message });
