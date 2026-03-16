@@ -15,7 +15,6 @@ export const getTasks = async (req, res) => {
     }
 };
 
-
 // 2. Create task - Email-to-ID conversion
 export const createTask = async (req, res) => {
     try {
@@ -53,7 +52,6 @@ export const createTask = async (req, res) => {
 };
 
 // 3. Update task
-// taskController.js
 export const updateTask = async (req, res) => {
     try {
         const { id } = req.params;
@@ -85,7 +83,6 @@ export const updateTask = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
-
 
 // 4. Delete task
 export const deleteTask = async (req, res) => {
