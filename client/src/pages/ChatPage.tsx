@@ -50,7 +50,7 @@ function ChatPage() {
       }
 
       try {
-        const res = await api.post("/api/users/login", { email: fbUser.email });
+        const res = await api.post("/users/login", { email: fbUser.email });
         const userData = res.data.user;
         setUser(userData);
 
@@ -63,7 +63,7 @@ function ChatPage() {
         // ---------- FETCH CHAT HISTORY ----------
         if (userData.teamId) {
           const msgs = await api.get<Message[]>(
-            `/api/messages?teamId=${userData.teamId}`,
+            `/messages?teamId=${userData.teamId}`,
             {
               headers: {
                 role: userData.role,
