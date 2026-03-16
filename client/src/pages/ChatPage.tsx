@@ -18,14 +18,17 @@ function ChatPage() {
   const [newMsg, setNewMsg] = useState("");
   const [user, setUser] = useState<any>(null);
 
-  // 1. Socket instance ko useRef mein rakhein (Taki 'emit' undefined na ho) ✅
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 2. Initial Socket Connection
+  // ---------------- SOCKET CONNECTION ----------------
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL;
-    socketRef.current = io(socketUrl, {
+    const SOCKET_URL =
+      import.meta.env.MODE === "development"
+        ? "http://localhost:5000"
+        : import.meta.env.VITE_SOCKET_URL;
+
+    socketRef.current = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
     });
 
@@ -38,53 +41,53 @@ function ChatPage() {
     };
   }, []);
 
-  // 3. Fetch User & History (Role Headers added) ✅
+  // ---------------- AUTH & FETCH HISTORY ----------------
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        try {
-          const res = await api.post("/users/login", { email: fbUser.email });
-          const userData = res.data.user;
-          setUser(userData);
-
-          if (userData.teamId) {
-            // 1. Double Check: Agar socket connected hai toh join karo
-            if (socketRef.current) {
-              socketRef.current.emit("joinTeam", userData.teamId);
-              console.log("Joined Team Room:", userData.teamId);
-            }
-
-            // 2. Fetch History with Headers
-            const msgs = await api.get<Message[]>(
-              `/messages?teamId=${userData.teamId}`,
-              {
-                headers: {
-                  role: userData.role,
-                  userid: userData._id,
-                },
-              },
-            );
-            setMessages(msgs.data);
-          }
-        } catch (err: any) {
-          console.error(
-            "Auth/History error:",
-            err.response?.data || err.message,
-          );
-        }
-      } else {
+      if (!fbUser) {
         setUser(null);
+        return;
+      }
+
+      try {
+        // Login or fetch user info from backend
+        const res = await api.post("/api/users/login", { email: fbUser.email });
+        const userData = res.data.user;
+        setUser(userData);
+
+        // Join team room on socket after user loads
+        if (userData.teamId && socketRef.current) {
+          socketRef.current.emit("joinTeam", userData.teamId);
+          console.log("Joined Team Room:", userData.teamId);
+        }
+
+        // Fetch chat history
+        if (userData.teamId) {
+          const msgs = await api.get<Message[]>(
+            `/api/messages?teamId=${userData.teamId}`,
+            {
+              headers: {
+                role: userData.role,
+                userid: userData._id,
+              },
+            },
+          );
+          setMessages(msgs.data);
+        }
+      } catch (err: any) {
+        console.error("Auth/History error:", err.response?.data || err.message);
       }
     });
 
     return () => unsubscribe();
-  }, []); // Empty dependency array is fine here as it runs on mount
+  }, []);
 
+  // ---------------- AUTO SCROLL ----------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 4. Send Message with safety check ✅
+  // ---------------- SEND MESSAGE ----------------
   const sendMessage = () => {
     if (!newMsg.trim() || !user || !socketRef.current) return;
 
@@ -99,6 +102,7 @@ function ChatPage() {
     setNewMsg("");
   };
 
+  // ---------------- RENDER ----------------
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
       {/* Header */}
@@ -116,19 +120,18 @@ function ChatPage() {
         </span>
       </div>
 
-      {/* Messages Scroll Area */}
-      {/* Messages Scroll Area */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, idx) => {
-          // IMPORTANT: Check kijiye ki 'msg.senderId' aur 'user._id' exact match ho rahe hain
           const isMe = msg.senderId === user?._id;
 
           return (
             <div
               key={idx}
-              className={`flex flex-col ${isMe ? "items-end text-right" : "items-start text-left"} animate-in fade-in slide-in-from-bottom-1 duration-300`}
+              className={`flex flex-col ${
+                isMe ? "items-end text-right" : "items-start text-left"
+              } animate-in fade-in slide-in-from-bottom-1 duration-300`}
             >
-              {/* Name and Time Label */}
               <span className="text-[9px] font-bold text-gray-500 mb-1 uppercase tracking-wider px-1">
                 {isMe ? "You" : msg.senderName} •{" "}
                 {msg.createdAt
@@ -138,8 +141,6 @@ function ChatPage() {
                     })
                   : "Just now"}
               </span>
-
-              {/* Message Bubble */}
               <div
                 className={`px-4 py-2.5 rounded-2xl max-w-[75%] text-sm shadow-md leading-relaxed ${
                   isMe
@@ -155,7 +156,7 @@ function ChatPage() {
         <div ref={messagesEndRef}></div>
       </div>
 
-      {/* Input Area */}
+      {/* Input */}
       <div className="p-4 bg-gray-900 border-t border-gray-800">
         <div className="flex gap-2 bg-gray-950 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all">
           <input
