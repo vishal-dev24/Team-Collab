@@ -4,6 +4,9 @@ import api from "../api/api";
 
 // 1. Team Interface (API se aane wale data ka structure)
 interface Team {
+  admin: any;
+  createdAt: any;
+  updatedAt: any;
   _id: string;
   name: string;
   description?: string;
@@ -181,12 +184,101 @@ const TeamsPage = () => {
       )}
 
       {isAdmin ? (
+        // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        //   {teams.length > 0 ? (
+        //     teams.map((team) => (
+        //       <div
+        //         key={team._id}
+        //         className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[280px] shadow-lg"
+        //       >
+        //         {/* Top Section: Icon + Name */}
+        //         <div className="flex gap-4 items-center mb-2">
+        //           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+        //             {team.name?.charAt(0)}
+        //           </div>
+
+        //           {editingTeamId === team._id ? (
+        //             <input
+        //               className="bg-gray-900 text-white px-2 py-1 rounded-lg outline-none w-36 sm:w-48"
+        //               value={editingTeamName}
+        //               onChange={(e) => setEditingTeamName(e.target.value)}
+        //               placeholder="Team Name"
+        //             />
+        //           ) : (
+        //             <h3 className="text-xl font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">
+        //               {team.name}
+        //             </h3>
+        //           )}
+        //         </div>
+
+        //         {/* Middle Section: Description + Members */}
+        //         <div className="flex-1 overflow-y-auto mt-2">
+        //           {editingTeamId === team._id ? (
+        //             <textarea
+        //               className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none"
+        //               value={editingTeamDesc}
+        //               onChange={(e) => setEditingTeamDesc(e.target.value)}
+        //               placeholder="Team description..."
+        //             />
+        //           ) : (
+        //             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest overflow-hidden">
+        //               {team.description || "No description"} •{" "}
+        //               {team.members?.length || 0} Members
+        //             </p>
+        //           )}
+        //         </div>
+
+        //         {/* Bottom Section: Buttons */}
+        //         <div className="flex gap-2 mt-4 justify-end flex-wrap">
+        //           {editingTeamId === team._id ? (
+        //             <>
+        //               <button
+        //                 className="bg-green-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
+        //                 onClick={() => handleUpdateTeam(team._id)}
+        //               >
+        //                 Save
+        //               </button>
+        //               <button
+        //                 className="bg-red-600 px-3 py-1 rounded-xl text-white text-xs font-bold"
+        //                 onClick={() => setEditingTeamId(null)}
+        //               >
+        //                 Cancel
+        //               </button>
+        //             </>
+        //           ) : (
+        //             <button
+        //               className="bg-indigo-500 px-3 py-1 rounded-xl text-white text-xs font-bold"
+        //               onClick={() => {
+        //                 setEditingTeamId(team._id);
+        //                 setEditingTeamName(team.name);
+        //                 setEditingTeamDesc(team.description || "");
+        //               }}
+        //             >
+        //               Edit
+        //             </button>
+        //           )}
+
+        //           <button
+        //             onClick={() => handleDeleteTeam(team._id)}
+        //             className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+        //           >
+        //             Delete
+        //           </button>
+        //         </div>
+        //       </div>
+        //     ))
+        //   ) : (
+        //     <p className="text-gray-500 col-span-full text-center py-10">
+        //       No teams found. Create one!
+        //     </p>
+        //   )}
+        // </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {teams.length > 0 ? (
             teams.map((team) => (
               <div
                 key={team._id}
-                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[280px] shadow-lg"
+                className="bg-gray-800 border border-gray-700 p-4 rounded-3xl flex flex-col justify-between h-[320px] shadow-lg"
               >
                 {/* Top Section: Icon + Name */}
                 <div className="flex gap-4 items-center mb-2">
@@ -208,19 +300,50 @@ const TeamsPage = () => {
                   )}
                 </div>
 
-                {/* Middle Section: Description + Members */}
-                <div className="flex-1 overflow-y-auto mt-2">
+                {/* Middle Section: Description + Members + Admin + Dates */}
+                <div className="flex-1 overflow-y-auto mt-2 text-xs text-gray-400 font-bold uppercase tracking-widest">
+                  {/* Description */}
                   {editingTeamId === team._id ? (
                     <textarea
-                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none"
+                      className="w-full bg-gray-900 text-white px-2 py-1 rounded-xl h-20 resize-none outline-none mb-2"
                       value={editingTeamDesc}
                       onChange={(e) => setEditingTeamDesc(e.target.value)}
                       placeholder="Team description..."
                     />
                   ) : (
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest overflow-hidden">
+                    <p className="overflow-hidden mb-2">
                       {team.description || "No description"} •{" "}
                       {team.members?.length || 0} Members
+                    </p>
+                  )}
+
+                  {/* Admin Info */}
+                  {team.admin && (
+                    <p className="mb-1">
+                      Admin: {team.admin.name} ({team.admin.email})
+                    </p>
+                  )}
+
+                  {/* Members List */}
+                  <p className="mb-1 font-bold">Members:</p>
+                  <ul className="list-disc list-inside max-h-16 overflow-y-auto text-gray-300 mb-2">
+                    {team.members?.map((m) => (
+                      <li key={m._id}>
+                        {m.name} ({m.role})
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Optional: Creation / Updated Date */}
+                  {team.createdAt && (
+                    <p className="text-gray-500 text-[10px] mt-1">
+                      Created: {new Date(team.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {team.updatedAt && (
+                    <p className="text-gray-500 text-[10px]">
+                      Last Updated:{" "}
+                      {new Date(team.updatedAt).toLocaleDateString()}
                     </p>
                   )}
                 </div>
