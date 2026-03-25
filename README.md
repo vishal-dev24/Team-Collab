@@ -5,6 +5,10 @@ A full-stack **Team Collaboration Platform** built with the **MERN Stack**, real
 This application allows teams to **create projects, manage tasks visually, communicate in real-time, and collaborate efficiently.**
 
 ---
+[![Frontend](https://img.shields.io/badge/Frontend-React-blue)](https://team-collab-1-8wfs.onrender.com)
+[![Backend](https://img.shields.io/badge/Backend-Node.js-green)](https://team-collab-1omv.onrender.com)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)](https://www.mongodb.com/)
+
 
 # 🔥 Features
 
