@@ -156,7 +156,7 @@ VITE_FIREBASE_APP_ID=your_app_id
 ## Clone Repository
 
 ```
-git clone https://github.com/yourusername/team-collab.git
+git clone https://github.com/vishal-dev24/Team-Collab.git
 ```
 
 ---
