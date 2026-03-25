@@ -5,7 +5,7 @@ A full-stack **Team Collaboration Platform** built with the **MERN Stack**, real
 This application allows teams to **create projects, manage tasks visually, communicate in real-time, and collaborate efficiently.**
 
 ---
-🌐 Live Links : https://team-collab-1-8wfs.onrender.com
+🌐 Live Link : https://team-collab-1-8wfs.onrender.com
 
 
 # 🔥 Features
