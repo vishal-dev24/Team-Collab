@@ -5,7 +5,7 @@ A full-stack **Team Collaboration Platform** built with the **MERN Stack**, real
 This application allows teams to **create projects, manage tasks visually, communicate in real-time, and collaborate efficiently.**
 
 ---
-[![Live](https://img.shields.io/badge/Frontend-React-blue)](https://team-collab-1-8wfs.onrender.com)
+🌐 Live Links : https://team-collab-1-8wfs.onrender.com
 
 
 # 🔥 Features
@@ -133,13 +133,13 @@ PORT=5000
 
 MONGO_URI=your_mongodb_connection
 
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://team-collab-1-8wfs.onrender.com
 ```
 
 ## Client (.env)
 
 ```
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=https://team-collab-1omv.onrender.com
 
 VITE_FIREBASE_API_KEY=your_key
 VITE_FIREBASE_AUTH_DOMAIN=your_domain
@@ -189,7 +189,7 @@ Deploy on **Render**
 
 ## Frontend
 
-Deploy on **Netlify**
+Deploy on **Render**
 
 ---
 
